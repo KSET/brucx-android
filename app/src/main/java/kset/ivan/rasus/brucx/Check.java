@@ -23,12 +23,21 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -90,7 +99,7 @@ public class Check extends ActionBarActivity {
         JSON = MediaType.parse("application/json; charset=utf-8");
 
         mTextView = (TextView) findViewById(R.id.id_nfc_status);
-        popunime = (TextView) findViewById(R.id.id_tag);
+
 
         nfcAdapter = NfcAdapter.getDefaultAdapter(this);
 
@@ -155,7 +164,7 @@ public class Check extends ActionBarActivity {
         }*/
 
         if (intent.getAction().equals(NfcAdapter.ACTION_TAG_DISCOVERED)) {
-            useTicket(ByteArrayToHexString(intent.getByteArrayExtra(NfcAdapter.EXTRA_ID)));
+            getStudentById(ByteArrayToHexString(intent.getByteArrayExtra(NfcAdapter.EXTRA_ID)));
         }
 
     }
@@ -220,8 +229,9 @@ public class Check extends ActionBarActivity {
                         @Override
                         public void run() {
 
-                                TextView myTextView = (TextView) findViewById(R.id.id_tag);
-                                myTextView.setText(responseData);
+                            Toast.makeText(Check.this, "Karta uspjesno iskoristena!", Toast.LENGTH_LONG).show();
+
+                                deleteTicket();
 
                         }
                     });
@@ -229,15 +239,14 @@ public class Check extends ActionBarActivity {
                     //failure
                     // Read data on the worker thread
                     //final int responseData = response.code();
-                    final String responseData = response.body().string();
+                    final int responseData = response.code();
 
                     // Run view-related code back on the main thread
                     Check.this.runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
 
-                            TextView myTextView = (TextView) findViewById(R.id.id_tag);
-                            myTextView.setText(responseData);
+                            Toast.makeText(Check.this, "Student nema kartu", Toast.LENGTH_LONG).show();
 
                         }
                     });
@@ -247,5 +256,153 @@ public class Check extends ActionBarActivity {
 
 
     }
+
+    public void deleteTicket(){
+
+        final String login = "cona";
+        final String password = "cona123";
+        String credential = Credentials.basic(login, password);
+
+        final Request request = new Request.Builder()
+                .method("DELETE", null)
+                .url("http://tomcat.marinpetrunic.com:80/brucx-ws/api/v1/students/AFF53F0B/tickets/test-karta")
+                .header("Authorization", credential)
+                .build();
+
+        ApiHelper.getInstance().getOkHttpClient().newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                Log.e("cona", e.getMessage());
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                if (response.isSuccessful()) {
+                    //success
+                    //Log.d("cona", response.body().string());
+                } else {
+                    //Log.d("cona", "fail");
+                    //failure
+                }
+            }
+        });
+    }
+
+    private void getStudentById(String id) {
+
+        final String nfcid = id;
+        final String login = "cona";
+        final String password = "cona123";
+        String credential = Credentials.basic(login, password);
+
+        final Request request = new Request.Builder()
+                .url("http://tomcat.marinpetrunic.com:80/brucx-ws/api/v1/students")
+                .header("Authorization", credential)
+                .build();
+
+        ApiHelper.getInstance().getOkHttpClient().newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                Check.this.runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Toast.makeText(Check.this, "Nisam dobio odgovor", Toast.LENGTH_LONG).show();
+                    }
+                });
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+
+                if(response.isSuccessful()) {
+
+                    List<Studenti> studenti = new ArrayList<>();
+                    Studenti student1 = null;
+                    String jsonResponse = response.body().string();
+
+                    JsonParser parser = new JsonParser();
+                    JsonElement jsonElement = parser.parse(jsonResponse);
+                    JsonArray students = jsonElement.getAsJsonArray();
+
+                    Gson gson = new Gson();
+                    for (JsonElement object : students) {
+                        studenti.add(gson.fromJson(object, Studenti.class));
+                    }
+
+                    for (int i = 0; i < studenti.size(); i++) {
+                        if (studenti.get(i).getNfcId().equals(nfcid))
+                            student1 = studenti.get(i);
+
+                    }
+
+                    final Studenti student = student1;
+
+                    Check.this.runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+
+                            TextView name = (TextView) findViewById(R.id.id_name);
+                            TextView status = (TextView) findViewById(R.id.id_status);
+                            ImageView image = (ImageView) findViewById(R.id.id_image);
+                            Button button = (Button) findViewById(R.id.id_checkbtn);
+
+                            // else if(student.getTickets() != null){
+                            //for(int i=0; i < student.getTickets().size(); i++){
+
+                            if(student==null){
+                                status.setText("Student ne postoji");
+                                return;
+                            }
+                            /*if((student.getTickets().size() != 0)){
+                                try {
+                                    if (student.getTickets().get(0).getTicketType().getName().equals("test-karta") && student.getTickets().get(0).getUsed() == 1) {
+                                        status.setText("Student već ima kupljenu kartu");
+                                        return;
+                                    }
+                                } catch (NullPointerException e) {
+
+                                }
+                            }*/
+
+                            name.setText(student.getName() + " " + student.getSurname());
+                            status.setText("Klikni za iskoristiti kartu!");
+                            //byte[] decodedString = Base64.decode(student.getImage(), Base64.DEFAULT);
+                            //Bitmap decodedByte = BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length);
+                            //image.setImageBitmap(decodedByte);
+                            button.setVisibility(View.VISIBLE);
+                            button.setClickable(true);
+
+                            button.setOnClickListener(new View.OnClickListener() {
+                                @Override
+                                public void onClick(View v) {
+                                    useTicket(student.getNfcId());
+                                    Check.this.recreate();
+                                }
+                            });
+
+                            //}
+                            //}
+                            //} else {
+                            //  TextVie
+                            // w myTextView = (TextView) findViewById(R.id.id_status);
+                            //myTextView.setText("Karta je već kupljena");
+                            //}
+
+
+                        }
+                    });
+                } else {
+                    Check.this.runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            TextView tv = (TextView) findViewById(R.id.id_status);
+                            tv.setText("Student nije naden");
+                        }
+                    });
+                }
+            }
+        });
+    }
+
 
 }

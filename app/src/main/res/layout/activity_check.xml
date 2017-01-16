@@ -11,15 +11,38 @@
         android:text="@string/app_name"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textSize="80dp"/>
+        android:textSize="60dp"/>
+
+    <TextView
+        android:text="Skeniraj ixicu"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
 
     <TextView
         android:id="@+id/id_nfc_status"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" />
 
+    <ImageView
+        android:id="@+id/id_image"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+
+    <TextView
+        android:id="@+id/id_name"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:id="@+id/id_tag"/>
+        android:id="@+id/id_status"/>
+
+    <Button
+        android:visibility="gone"
+        android:clickable="false"
+        android:text="ISKORISTI"
+        android:id="@+id/id_checkbtn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
 </LinearLayout>

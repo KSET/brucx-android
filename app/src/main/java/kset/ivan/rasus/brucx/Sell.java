@@ -70,7 +70,6 @@ public class Sell extends ActionBarActivity {
     public static final String TAG = "NfcDemo";
 
     private TextView mTextView;
-    TextView popunime;
     OkHttpClient client;
     MediaType JSON;
     //AndroidHttpPostGet server = new AndroidHttpPostGet();
@@ -99,8 +98,6 @@ public class Sell extends ActionBarActivity {
         JSON = MediaType.parse("application/json; charset=utf-8");
 
         mTextView = (TextView) findViewById(R.id.id_nfc_status);
-
-        popunime = ((TextView) findViewById(R.id.id_tag));
 
         nfcAdapter = NfcAdapter.getDefaultAdapter(this);
 
@@ -171,7 +168,7 @@ public class Sell extends ActionBarActivity {
 
             getStudentById(ByteArrayToHexString(intent.getByteArrayExtra(NfcAdapter.EXTRA_ID)));
 
-            Toast.makeText(Sell.this, "MMM di sam poslije getstud", Toast.LENGTH_LONG).show();
+
 
         }
 
@@ -255,7 +252,7 @@ public class Sell extends ActionBarActivity {
                         @Override
                         public void run() {
 
-                            Toast.makeText(Sell.this, Integer.toString(responseData), Toast.LENGTH_LONG).show();
+                            Toast.makeText(Sell.this, "Student već ima kupljenu kartu", Toast.LENGTH_LONG).show();
 
                         }
                     });
@@ -282,7 +279,7 @@ public class Sell extends ActionBarActivity {
                 Sell.this.runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        Toast.makeText(Sell.this, "MMM di sam555", Toast.LENGTH_LONG).show();
+                        Toast.makeText(Sell.this, "Nisam dobio odgovor", Toast.LENGTH_LONG).show();
                     }
                 });
             }
@@ -290,67 +287,92 @@ public class Sell extends ActionBarActivity {
             @Override
             public void onResponse(Call call, Response response) throws IOException {
 
-                List<Studenti> studenti = new ArrayList<>();
-                Studenti student1 = null;
-                String jsonResponse = response.body().string();
+                if(response.isSuccessful()) {
 
-                JsonParser parser = new JsonParser();
-                JsonElement jsonElement = parser.parse(jsonResponse);
-                JsonArray students = jsonElement.getAsJsonArray();
+                    List<Studenti> studenti = new ArrayList<>();
+                    Studenti student1 = null;
+                    String jsonResponse = response.body().string();
 
-                Gson gson = new Gson();
-                for (JsonElement object : students) {
-                    studenti.add(gson.fromJson(object, Studenti.class));
-                }
+                    JsonParser parser = new JsonParser();
+                    JsonElement jsonElement = parser.parse(jsonResponse);
+                    JsonArray students = jsonElement.getAsJsonArray();
 
-                for (int i = 0; i < studenti.size(); i++) {
-                    if (studenti.get(i).getNfcId().equals(nfcid))
-                        student1 = studenti.get(i);
+                    Gson gson = new Gson();
+                    for (JsonElement object : students) {
+                        studenti.add(gson.fromJson(object, Studenti.class));
+                    }
 
-                }
-
-                final Studenti student = student1;
-
-                Sell.this.runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        Toast.makeText(Sell.this, "MMM di sam " + student.getName(), Toast.LENGTH_LONG).show();
-                        // else if(student.getTickets() != null){
-                            //for(int i=0; i < student.getTickets().size(); i++){
-                                //if(!student.getTickets().get(i).getTicketType().getName().equals("test-karta")){
-                                    TextView name = (TextView) findViewById(R.id.id_name);
-                                    TextView status = (TextView) findViewById(R.id.id_status);
-                                    ImageView image = (ImageView) findViewById(R.id.id_image);
-                                    Button button = (Button) findViewById(R.id.id_buy);
-
-                                    name.setText(student.getName() + " " + student.getSurname());
-                                    status.setText("Klikni za kupiti kartu!");
-                                    byte[] decodedString = Base64.decode(student.getImage(), Base64.DEFAULT);
-                                    Bitmap decodedByte = BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length);
-                                    image.setImageBitmap(decodedByte);
-                                    button.setVisibility(View.VISIBLE);
-                                    button.setClickable(true);
-
-                                    button.setOnClickListener(new View.OnClickListener() {
-                                        @Override
-                                        public void onClick(View v) {
-                                            buyTicket(student.getNfcId());
-                                            Sell.this.recreate();
-                                        }
-                                    });
-
-                                //}
-                            //}
-                        //} else {
-                          //  TextView myTextView = (TextView) findViewById(R.id.id_status);
-                            //myTextView.setText("Karta je već kupljena");
-                        //}
-
-
+                    for (int i = 0; i < studenti.size(); i++) {
+                        if (studenti.get(i).getNfcId().equals(nfcid))
+                            student1 = studenti.get(i);
 
                     }
-                });
 
+                    final Studenti student = student1;
+
+                    Sell.this.runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+
+                            TextView name = (TextView) findViewById(R.id.id_name);
+                            TextView status = (TextView) findViewById(R.id.id_status);
+                            ImageView image = (ImageView) findViewById(R.id.id_image);
+                            Button button = (Button) findViewById(R.id.id_buy);
+
+                            // else if(student.getTickets() != null){
+                            //for(int i=0; i < student.getTickets().size(); i++){
+
+                            if(student==null){
+                                status.setText("Student nije naden");
+                                return;
+                            }
+                            /*if((student.getTickets().size() != 0)){
+                                try {
+                                    if (student.getTickets().get(0).getTicketType().getName().equals("test-karta") && student.getTickets().get(0).getUsed() == 1) {
+                                        status.setText("Student već ima kupljenu kartu");
+                                        return;
+                                    }
+                                } catch (NullPointerException e) {
+
+                                }
+                            }*/
+
+                            name.setText(student.getName() + " " + student.getSurname());
+                            status.setText("Klikni za kupiti kartu!");
+                            //byte[] decodedString = Base64.decode(student.getImage(), Base64.DEFAULT);
+                            //Bitmap decodedByte = BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length);
+                            //image.setImageBitmap(decodedByte);
+                            button.setVisibility(View.VISIBLE);
+                            button.setClickable(true);
+
+                            button.setOnClickListener(new View.OnClickListener() {
+                                @Override
+                                public void onClick(View v) {
+                                    buyTicket(student.getNfcId());
+                                    Sell.this.recreate();
+                                }
+                            });
+
+                            //}
+                            //}
+                            //} else {
+                            //  TextVie
+                            // w myTextView = (TextView) findViewById(R.id.id_status);
+                            //myTextView.setText("Karta je već kupljena");
+                            //}
+
+
+                        }
+                    });
+                } else {
+                    Sell.this.runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            TextView tv = (TextView) findViewById(R.id.id_status);
+                            tv.setText("Student nije naden");
+                        }
+                    });
+                }
             }
         });
     }
